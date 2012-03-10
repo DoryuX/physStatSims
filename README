@@ -1,0 +1,14 @@
+
+Usage:
+    python random_walk.py
+
+Note:
+    You may have to create the directories:
+        ./output/
+        ./output/1D/
+        ./output/2D/
+        ./output/3D/
+        ./output/4D/
+        ./output/avoiding/
+        ./output/porosity/
+
