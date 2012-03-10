@@ -3,6 +3,8 @@ Usage:
     python random_walk.py
 
 Note:
+    This script is currently using the latest python version 3.*
+
     You may have to create the directories:
         ./output/
         ./output/1D/
