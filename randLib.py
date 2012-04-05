@@ -810,6 +810,18 @@ def selfAvoidingRandomWalk( steps, repeat, size ):
     sumX = []
     sumY = []
 
+    sumOfThisRunX = []
+    sumOfThisRunY = []
+
+    centerOfMassX = []
+    centerOfMassY = []
+
+    runStop = []
+
+    rgx = []
+    rgy = []
+    rg = []
+
     grid = create2DGrid( size )
 
     # Initialize Grid
@@ -822,6 +834,14 @@ def selfAvoidingRandomWalk( steps, repeat, size ):
         for j in range( repeat ):
             stepGridX[i].append(0)
             stepGridY[i].append(0)
+            sumOfThisRunX.append(0)
+            sumOfThisRunY.append(0)
+            centerOfMassX.append(0)
+            centerOfMassY.append(0)
+            runStop.append(0)
+            rgx.append(0)
+            rgy.append(0)
+            rg.append(0)
 
     numSuccess = 0
 
@@ -836,8 +856,6 @@ def selfAvoidingRandomWalk( steps, repeat, size ):
         prevY = 0
 
         numSteps = 0
-        fileName_steps = './output/avoiding/randWalk_2D_' + str(size) + '_st' + str(steps) + '_sa' + str(repeat) + '_steps.dat'
-        outfile_steps = open(fileName_steps, 'w')
 
         while row < steps:
             direction = random.randint(1, 4)
@@ -865,15 +883,66 @@ def selfAvoidingRandomWalk( steps, repeat, size ):
 
             if ( grid[x][y] == 2 ):
                 numSteps = row
+                runStop[col] = row
                 break
             else:
                 grid[x][y] = 2
 
             row += 1
         if row == steps:
+            numSteps = steps
+            runStop[col] = row - 1
             numSuccess += 1
+        
         col += 1
         row = 0
+
+    # Radius of Gyration
+    row = 0
+    col = 0
+
+    # Center of Mass
+    while col < repeat:
+        while row <= runStop[col]:
+            sumOfThisRunX[col] += stepGridX[row][col]
+            sumOfThisRunY[col] += stepGridY[row][col]
+
+            row += 1
+        col += 1
+        row = 0
+
+    col = 0
+    row = 0
+
+    # Calculating Rg
+    while col < repeat:
+        centerOfMassX[col] = sumOfThisRunX[col] / steps
+        centerOfMassY[col] = sumOfThisRunY[col] / steps
+
+        sumOfDistanceX = 0
+        sumOfDistanceY = 0
+        while row <= runStop[col]:
+            sumOfDistanceX += math.pow(stepGridX[row][col] - centerOfMassX[col], 2)
+            sumOfDistanceY += math.pow(stepGridY[row][col] - centerOfMassY[col], 2)
+
+            row += 1
+
+        tSteps = runStop[col]
+
+        if tSteps == 0:
+            tSteps = 1
+
+        rgx[col] = math.sqrt(sumOfDistanceX) / tSteps
+        rgy[col] = math.sqrt(sumOfDistanceY) / tSteps
+
+        rg[col] = math.sqrt( math.pow(rgx[col], 2) + math.pow(rgy[col], 2) )
+
+        col += 1
+        row = 0
+
+    col = 0
+    row = 0
+
 
     # output
     row = 0
@@ -882,6 +951,8 @@ def selfAvoidingRandomWalk( steps, repeat, size ):
     fileName_X = './output/avoiding/randWalk_2D_' + str(size) + '_st' + str(steps) + '_sa' + str(repeat) + '_X.dat'
     fileName_Y = './output/avoiding/randWalk_2D_' + str(size) + '_st' + str(steps) + '_sa' + str(repeat) + '_Y.dat'
     fileName_Success = './output/avoiding/randWalk_2D_' + str(size) + '_st' + str(steps) + '_sa' + str(repeat) + '_Success.dat'
+
+    fileName_Rg = './output/avoiding/randWalk_2D_' + str(size) + '_st' + str(steps) + '_sa' + str(repeat) + '_Rg.dat'
 
     outFile_X = open(fileName_X, 'w')
     outFile_Y = open(fileName_Y, 'w')
@@ -916,5 +987,22 @@ def selfAvoidingRandomWalk( steps, repeat, size ):
     outFile_success = open(fileName_Success, 'w')
     outFile_success.write("%8.2f\n" % (numSuccess / repeat))
     outFile_success.close()
+
+    # Print Radius of Gyration
+    row = 0
+    col = 0
+
+    outfile_Rg = open(fileName_Rg, 'w')
+
+    while col < repeat:
+        outfile_Rg.write( "%6d" % ( col ) )
+        outfile_Rg.write( "%8.2f" % ( rgx[col] ) ) 
+        outfile_Rg.write( "%8.2f" % ( rgy[col] ) ) 
+        outfile_Rg.write( "%8.2f" % ( rg[col] ) ) 
+        outfile_Rg.write( "\n" )
+
+        col += 1
+
+    outfile_Rg.close()
 #### END OF 2D
 

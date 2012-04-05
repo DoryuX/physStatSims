@@ -46,7 +46,7 @@ else:
 	sys.exit()
 
 print("10 Steps")
-randLib.selfAvoidingRandomWalk( 10, 10, 10 )
+randLib.selfAvoidingRandomWalk( 100, 1000, 100 )
 
 #print("100 Steps")
 #randLib.simpleRandomWalk4D( 100, 10 )
