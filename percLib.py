@@ -1,6 +1,8 @@
 """ Set up an environment to run a percolation simulation. 
 """
+import sys
 import random
+import time
 
 class Site:
     """ A node for a lattice. 
@@ -8,6 +10,7 @@ class Site:
     occupied = 0
     visited = 0
     clusters = [[]]
+    spanning = []
 
     def __init__(self, x, y, occupied):
         self.x = x
@@ -21,6 +24,9 @@ class Site:
 
     def __str__(self):
         output = '{0}'.format(self.group)
+
+        if self.occupied and not self.visited:
+            output = '[' + output + ']'
 
         return output
 
@@ -48,82 +54,144 @@ def print2DGrid( grid ):
         print('%s' % ', '.join(map(str, grid[i])))
         print('\n')
 
-def walkGrid(grid, i, j, lbl):
-    """ Walk a grid and determine the cluster label for this site.
-    """
+def findSpanning( grid ):
     size = len(grid)
-    if i >= size or i < 0 or j >= size or j < 0:
-        return
 
-    if grid[i][j+1].occupied:
-        walkGrid(grid, i, j + 1, lbl)
-    if grid[i+1][j].occupied:
-        walkGrid(grid, i + 1, j, lbl)
-    if grid[i][j-1].occupied:
-        walkGrid(grid, i, j - 1, lbl)
-    if grid[i-1][j].occupied:
-        walkGrid(grid, i - 1, j, lbl)
+    lgroups = []
+    tgroups = []
 
-    grid[i][j].group = lbl
-    grid[i][j].visited = True
+    rspanning = []
+    bspanning = []
 
-    Site.visited += 1
+    # Left and Top edge group
+    for i in range(size):
+        # Left Edge
+        if grid[i][0].occupied and grid[i][0].group > 0 and not lgroups.count(grid[i][0].group):
+            lgroups.append(grid[i][0].group)
+        # Top Edge
+        if grid[i][0].occupied and grid[0][i].group > 0 and not tgroups.count(grid[0][i].group):
+            tgroups.append(grid[0][i].group)
+
+    # Find Spanning Clusters ( If they reach Left to Right )
+    for x in lgroups:
+        for i in range(size):
+            if grid[i][size-1].group > 0 and grid[i][size-1].group == x and not rspanning.count(x): 
+                rspanning.append(x)
+
+    for x in tgroups:
+        for i in range(size):
+            if grid[size - 1][i].group > 0 and grid[size-1][i].group == x and not bspanning.count(x): 
+                bspanning.append(x)
+
+    spanning = {'LR': rspanning, 'TB': bspanning}
+
+    # Return union of lists.
+    return spanning
+            
 
 def analyzeGrid( grid ):
-	i = j = 0
-	group = 0
-	size = len(grid)
-	stack = []
+    i = j = 0
+    group = 0
+    size = len(grid)
+    stack = []
+    clusters = [[]]
+    
+    for k in range(size):
+        for l in range(size):
+            if grid[k][l].occupied and not grid[k][l].visited:
+                stack.append([k, l])
 
-	print("Grid: {0}x{0}\n".format(size))
+                group += 1
+                clusters.append([])
+                clusters[group].append([k, l])
 
-	for k in range(size):
-		for l in range(size):
-			if grid[k][l].occupied and not grid[k][l].visited:
-				stack.append([k, l])
-				
-				group += 1
-				Site.clusters.append([])
-				Site.clusters[group].append([k, l])
-				
-				while stack:
-					i, j = stack.pop()
-					
-					# Right
-					if(i + 1 < size and grid[i + 1][j].occupied and not grid[i + 1][j].visited):
-						stack.append([i + 1, j])
-						Site.clusters[group].append([i + 1, j])
+                while stack:
+                    i, j = stack.pop()
+                    
+                    # Right
+                    if(i + 1 < size and grid[i + 1][j].occupied and not grid[i + 1][j].visited):
+                        stack.append([i + 1, j])
+                        clusters[group].append([i + 1, j])
 					
 					# Up
-					if(j + 1 < size and grid[i][j + 1].occupied and not grid[i][j + 1].visited):
-						stack.append([i, j + 1])
-						Site.clusters[group].append([i, j + 1])
+                    if(j + 1 < size and grid[i][j + 1].occupied and not grid[i][j + 1].visited):
+                        stack.append([i, j + 1])
+                        clusters[group].append([i, j + 1])
 					
-					# Left
-					if(i - 1 >= 0 and grid[i - 1][j].occupied and not grid[i - 1][j].visited):
-						stack.append([i - 1, j])
-						Site.clusters[group].append([i - 1, j])
+                    # Left
+                    if(i - 1 >= 0 and grid[i - 1][j].occupied and not grid[i - 1][j].visited):
+                        stack.append([i - 1, j])
+                        clusters[group].append([i - 1, j])
 					
 					# Down
-					if(j - 1 >= 0 and grid[i][j - 1].occupied and not grid[i][j - 1].visited):
-						stack.append([i, j - 1])
-						Site.clusters[group].append([i, j - 1])
-					
-					# Mark this place as visited so we can skip then later.
-					grid[i][j].visited = True
-					grid[i][j].group = group
+                    if(j - 1 >= 0 and grid[i][j - 1].occupied and not grid[i][j - 1].visited):
+                        stack.append([i, j - 1])
+                        clusters[group].append([i, j - 1])
+                    
+                    # Mark this place as visited so we can skip then later.
+                    grid[i][j].visited = True
+                    grid[i][j].group = group
 				
-			# Mark visited, even unoccupied ones.
-			grid[k][l].visited = True
+            # Mark visited, even unoccupied ones.
+            grid[k][l].visited = True
+    
+    return clusters
 
 if __name__ == "__main__":
-	p = 0.5
-	size = 5
+    argc = len(sys.argv)
+    showGrid = False
+    runs = 1
 
-	lattice = create2DGrid(p, size)
-	print("Initial Grid:")
-	print2DGrid( lattice )
-	analyzeGrid( lattice )
-	print2DGrid( lattice )
+    # Start Timer
+    time.clock()
 
-	print("Occupied Sites: {0} out of {1}".format(Site.occupied, size*size))
+    if argc >= 2:
+        size = int(sys.argv[1]) 
+    else: 
+        size = 5
+
+    if argc >= 3:
+        p = float(sys.argv[2]) 
+    else: 
+        p = 0.5
+
+    if argc >= 4:
+        runs = int(sys.argv[3])
+    
+    if argc >= 5 and sys.argv[4] == 'True':
+        showGrid = True
+
+    fileName = "./output/percolation/perc_{0}x{0}_{1}p_{2}runs.dat".format(size, p, runs)
+    outFile = open(fileName, 'w')
+
+    print("Size: {0}, Porosity: {1}, Show: {2}".format(size, p, showGrid))
+
+    for i in range(runs):
+        print("Run {0} of {1}.".format(i, runs))
+        lattice = create2DGrid(p, size)
+
+        if showGrid:
+            print("Initial Grid:")
+            print2DGrid( lattice )
+
+        Site.clusters = analyzeGrid( lattice )
+        Site.spanning = findSpanning(lattice)
+
+        # P Infinity
+        c_max = 0
+        for c in Site.clusters:
+            if len(c) > c_max:
+                c_max = len(c)
+
+        p_inf = (c_max / Site.occupied)
+        outFile.write("{0} {1:.3f}\n".format(i, p_inf))
+
+        if showGrid:
+            print2DGrid( lattice )
+
+            print("Spanning Clusters: ")
+            print(Site.spanning)
+            print("Occupied Sites: {0} out of {1}".format(Site.occupied, size*size))
+            print("Time: {0}s".format(time.clock()))
+
+    outFile.close()
