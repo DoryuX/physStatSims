@@ -2,9 +2,6 @@
 """
 import random
 
-clusters = []
-clusters.append([])
-
 class Site:
     """ A node for a lattice. 
     """
@@ -25,7 +22,7 @@ class Site:
         output = '{0}'.format(self.group)
 
         if self.occupied:
-            output = '[' + output + ']'
+            output = '*'
 
         return output
 
@@ -75,18 +72,15 @@ def walkGrid(grid, i, j, lbl):
     Site.visited += 1
 
 def analyzeGrid( grid ):
-    """ Determine the clusters for a grid.
-        Based on Algorithm 3.9 - pg. 90
-    """
+    i = j = 0
     size = len(grid)
-    lbl = 1
-    while Site.visited < Site.occupied:
-        for i in range(size):
-            for j in range(size):
-                if grid[i][j].occupied and not grid[i][j].visited:
-                    print("Found at [{0}, {1}], Label = {2}".format(i, j, lbl))
-                    walkGrid(grid, i, j, lbl)
-                    lbl += 1
+    
+    clusters = []
+    oldPosition = [0,0]
+
+    print("Grid: {0}x{0}\n".format(size))
+
+    #while Site.visited != (size*size):
 
 if __name__ == "__main__":
     p = 0.5
@@ -95,5 +89,6 @@ if __name__ == "__main__":
     lattice = create2DGrid(p, size)
     print("Initial Grid:")
     print2DGrid( lattice )
+    analyzeGrid( lattice )
 
     print("Occupied Sites: {0} out of {1}".format(Site.occupied, size*size))
