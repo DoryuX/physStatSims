@@ -7,6 +7,7 @@ class Site:
     """
     occupied = 0
     visited = 0
+    clusters = [[]]
 
     def __init__(self, x, y, occupied):
         self.x = x
@@ -20,9 +21,6 @@ class Site:
 
     def __str__(self):
         output = '{0}'.format(self.group)
-
-        if self.occupied:
-            output = '*'
 
         return output
 
@@ -72,23 +70,60 @@ def walkGrid(grid, i, j, lbl):
     Site.visited += 1
 
 def analyzeGrid( grid ):
-    i = j = 0
-    size = len(grid)
-    
-    clusters = []
-    oldPosition = [0,0]
+	i = j = 0
+	group = 0
+	size = len(grid)
+	stack = []
 
-    print("Grid: {0}x{0}\n".format(size))
+	print("Grid: {0}x{0}\n".format(size))
 
-    #while Site.visited != (size*size):
+	for k in range(size):
+		for l in range(size):
+			if grid[k][l].occupied and not grid[k][l].visited:
+				stack.append([k, l])
+				
+				group += 1
+				Site.clusters.append([])
+				Site.clusters[group].append([k, l])
+				
+				while stack:
+					i, j = stack.pop()
+					
+					# Right
+					if(i + 1 < size and grid[i + 1][j].occupied and not grid[i + 1][j].visited):
+						stack.append([i + 1, j])
+						Site.clusters[group].append([i + 1, j])
+					
+					# Up
+					if(j + 1 < size and grid[i][j + 1].occupied and not grid[i][j + 1].visited):
+						stack.append([i, j + 1])
+						Site.clusters[group].append([i, j + 1])
+					
+					# Left
+					if(i - 1 >= 0 and grid[i - 1][j].occupied and not grid[i - 1][j].visited):
+						stack.append([i - 1, j])
+						Site.clusters[group].append([i - 1, j])
+					
+					# Down
+					if(j - 1 >= 0 and grid[i][j - 1].occupied and not grid[i][j - 1].visited):
+						stack.append([i, j - 1])
+						Site.clusters[group].append([i, j - 1])
+					
+					# Mark this place as visited so we can skip then later.
+					grid[i][j].visited = True
+					grid[i][j].group = group
+				
+			# Mark visited, even unoccupied ones.
+			grid[k][l].visited = True
 
 if __name__ == "__main__":
-    p = 0.5
-    size = 10
+	p = 0.5
+	size = 5
 
-    lattice = create2DGrid(p, size)
-    print("Initial Grid:")
-    print2DGrid( lattice )
-    analyzeGrid( lattice )
+	lattice = create2DGrid(p, size)
+	print("Initial Grid:")
+	print2DGrid( lattice )
+	analyzeGrid( lattice )
+	print2DGrid( lattice )
 
-    print("Occupied Sites: {0} out of {1}".format(Site.occupied, size*size))
+	print("Occupied Sites: {0} out of {1}".format(Site.occupied, size*size))
