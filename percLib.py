@@ -35,6 +35,8 @@ def create2DGrid( porosity = 1.0, size = 5 ):
         porosity. 
     """
     grid = []
+    Site.occupied = 0
+
     for i in range( size ):
         grid.append([])
         for j in range( size ):
@@ -142,6 +144,11 @@ if __name__ == "__main__":
     showGrid = False
     runs = 1
 
+    # Values for avg p_inf
+    p_inf_avg = []
+    p_inf_sum = 0
+    p = 0
+
     # Start Timer
     time.clock()
 
@@ -151,47 +158,54 @@ if __name__ == "__main__":
         size = 5
 
     if argc >= 3:
-        p = float(sys.argv[2]) 
-    else: 
-        p = 0.5
-
-    if argc >= 4:
-        runs = int(sys.argv[3])
+        runs = int(sys.argv[2])
     
-    if argc >= 5 and sys.argv[4] == 'True':
+    if argc >= 4 and sys.argv[3] == 'True':
         showGrid = True
 
-    fileName = "./output/percolation/perc_{0}x{0}_{1}p_{2}runs.dat".format(size, p, runs)
+    fileName = "./output/percolation/perc_{0}x{0}_{1}runs.dat".format(size, runs)
     outFile = open(fileName, 'w')
 
-    print("Size: {0}, Porosity: {1}, Show: {2}".format(size, p, showGrid))
+    print("Size: {0}, Show: {1}".format(size, showGrid))
 
-    for i in range(runs):
-        print("Run {0} of {1}.".format(i, runs))
-        lattice = create2DGrid(p, size)
+    for j in range(21):
+        p_inf_sum = 0
+        p = j / 20.0
 
-        if showGrid:
-            print("Initial Grid:")
-            print2DGrid( lattice )
+        for i in range(runs):
+            lattice = create2DGrid(p, size)
 
-        Site.clusters = analyzeGrid( lattice )
-        Site.spanning = findSpanning(lattice)
+            if showGrid:
+                print("Initial Grid:")
+                print2DGrid( lattice )
 
-        # P Infinity
-        c_max = 0
-        for c in Site.clusters:
-            if len(c) > c_max:
-                c_max = len(c)
+            Site.clusters = analyzeGrid( lattice )
+            Site.spanning = findSpanning(lattice)
 
-        p_inf = (c_max / Site.occupied)
-        outFile.write("{0} {1:.3f}\n".format(i, p_inf))
+            # P Infinity
+            c_max = 0
+            for c in Site.clusters:
+                if len(c) > c_max:
+                    c_max = len(c)
 
-        if showGrid:
-            print2DGrid( lattice )
+            # If there is no spanning cluster, skip it.
+            if len(Site.spanning) > 0 and Site.occupied > 0:
+                p_inf_sum = (c_max / Site.occupied)
+            else:
+                p_inf_sum = 0
 
-            print("Spanning Clusters: ")
-            print(Site.spanning)
-            print("Occupied Sites: {0} out of {1}".format(Site.occupied, size*size))
-            print("Time: {0}s".format(time.clock()))
+            if showGrid:
+                print2DGrid( lattice )
+
+                print("Spanning Clusters: ")
+                print(Site.spanning)
+                print("Occupied Sites: {0} out of {1}".format(Site.occupied, size*size))
+
+        p_inf_avg.append(p_inf_sum / runs)
+
+        print("Run {0} of {1}.".format(j, 20))
+        outFile.write("{0} {1:.3f}\n".format(p, p_inf_avg[j]))
+
+    print("Time: {0}s".format(time.clock()))
 
     outFile.close()
