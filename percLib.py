@@ -3,6 +3,7 @@
 import sys
 import random
 import time
+#import math
 
 class Site:
     """ A node for a lattice. 
@@ -30,7 +31,7 @@ class Site:
 
         return output
 
-def create2DGrid( porosity = 1.0, size = 5 ):
+def create2DGrid( probability = 1.0, size = 5 ):
     """ Create a grid of [ size X size ] in 2 dimensions with a specified 
         porosity. 
     """
@@ -42,7 +43,7 @@ def create2DGrid( porosity = 1.0, size = 5 ):
         for j in range( size ):
             occupied = False
 
-            if porosity < random.random():  # Algorithm 3.8 - pg. 87
+            if probability > random.random():  # Algorithm 3.8 - pg. 87
                 occupied = True
 
             grid[i].append( Site(i, j, occupied) )
@@ -143,6 +144,11 @@ if __name__ == "__main__":
     argc = len(sys.argv)
     showGrid = False
     runs = 1
+    steps = 10
+    size = 5
+
+    ns = []
+    p_crit = 0.6
 
     # Values for avg p_inf
     p_inf_avg = []
@@ -152,25 +158,38 @@ if __name__ == "__main__":
     # Start Timer
     time.clock()
 
+    if argc < 2:
+        print("\nUsage: python3 perLib.py <Size> <Runs> <Steps> " +
+              "<Show Grid>\n\t{0}\n\t{1}\n\t{2}\n\t{3}\n".format(
+                "Size - The MxM Grid.",
+                "Runs - How many runs to average.",
+                "Steps - How many steps from p = 0 to 1.",
+                "Show Grid - Put 'True' to show output values."))
+        sys.exit()
+
     if argc >= 2:
         size = int(sys.argv[1]) 
-    else: 
-        size = 5
 
     if argc >= 3:
         runs = int(sys.argv[2])
+
+    if argc >= 4:
+        steps = int(sys.argv[3])
     
-    if argc >= 4 and sys.argv[3] == 'True':
+    if argc >= 5 and sys.argv[4] == 'True':
         showGrid = True
 
-    fileName = "./output/percolation/perc_{0}x{0}_{1}runs.dat".format(size, runs)
+    fileName = "./output/percolation/perc_{0}x{0}_{1}runs_{2}steps.dat".format(size, runs, steps)
+    fileNameNS = "./output/percolation/ns_{0}x{0}_{1}runs_{2}steps_{3}crit.dat".format(size, runs, steps, p_crit)
+    fileNameFss = "./output/percolation/fss_{0}x{0}_{1}runs_{2}steps_{3}crit.dat".format(size, runs, steps, p_crit)
     outFile = open(fileName, 'w')
+    outFileFss = open(fileNameFss, 'w')
 
     print("Size: {0}, Show: {1}".format(size, showGrid))
 
-    for j in range(21):
+    for j in range(steps + 1):
         p_inf_sum = 0
-        p = j / 20.0
+        p = (j / steps)
 
         for i in range(runs):
             lattice = create2DGrid(p, size)
@@ -188,6 +207,9 @@ if __name__ == "__main__":
                 if len(c) > c_max:
                     c_max = len(c)
 
+                if p == p_crit:
+                    ns.append(len(c))
+
             # If there is no spanning cluster, skip it.
             if len(Site.spanning) > 0 and Site.occupied > 0:
                 p_inf_sum = (c_max / Site.occupied)
@@ -203,9 +225,21 @@ if __name__ == "__main__":
 
         p_inf_avg.append(p_inf_sum / runs)
 
-        print("Run {0} of {1}.".format(j, 20))
+        print("Run {0} of {1}. p = {2}".format(j, steps, p))
         outFile.write("{0} {1:.3f}\n".format(p, p_inf_avg[j]))
+        outFileFss.write("{0:.3f} {1:.3f}\n".format((p - p_crit)*(size**(1/(4/3))), (size**(0.139/(4/3))*p_inf_avg[j])))
+
 
     print("Time: {0}s".format(time.clock()))
 
     outFile.close()
+    outFileFss.close()
+
+    # Write out the Ns vs Size file for the specified prob.
+    outFile = open(fileNameNS, 'w')
+
+    for i in range(max(ns)):
+        outFile.write("{0} {1}\n".format(i, ns.count(i)))
+
+    outFile.close()
+
