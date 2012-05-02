@@ -5,12 +5,3 @@ Usage:
 Note:
     This script is currently using the latest python version 3.*
 
-    You may have to create the directories:
-        ./output/
-        ./output/1D/
-        ./output/2D/
-        ./output/3D/
-        ./output/4D/
-        ./output/avoiding/
-        ./output/porosity/
-
